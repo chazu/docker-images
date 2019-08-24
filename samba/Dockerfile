@@ -1,4 +1,4 @@
-FROM ubuntu:16.04
+FROM ubuntu:18.04
 MAINTAINER dreamcat4 <dreamcat4@gmail.com>
 
 
@@ -7,20 +7,21 @@ ENV _apt_clean="eval apt-get clean && $_clean"
 
 
 # Install s6-overlay
-ENV s6_overlay_version="1.17.1.1"
+ENV s6_overlay_version="1.22.1.0"
 ADD https://github.com/just-containers/s6-overlay/releases/download/v${s6_overlay_version}/s6-overlay-amd64.tar.gz /tmp/
-RUN tar zxf /tmp/s6-overlay-amd64.tar.gz -C / && $_clean
+RUN tar hzxf /tmp/s6-overlay-amd64.tar.gz -C / --exclude=usr/bin/execlineb \
+ && tar hzxf /tmp/s6-overlay-amd64.tar.gz -C /usr ./bin/execlineb && $_clean
 ENV S6_LOGGING="1"
 # ENV S6_KILL_GRACETIME="3000"
 
 
 # Install pipework
 ADD https://github.com/jpetazzo/pipework/archive/master.tar.gz /tmp/pipework-master.tar.gz
-RUN tar -zxf /tmp/pipework-master.tar.gz -C /tmp && cp /tmp/pipework-master/pipework /sbin/ && $_clean
+RUN tar hzxf /tmp/pipework-master.tar.gz -C /tmp && cp /tmp/pipework-master/pipework /sbin/ && $_clean
 
 
 # Install samba
-RUN apt-get update -qq && DEBIAN_FRONTEND=noninteractive apt-get install -qqy samba && $_apt_clean
+RUN apt-get update -qq && DEBIAN_FRONTEND=noninteractive apt-get install -qqy iproute2 net-tools samba && $_apt_clean
 
 
 # Create samba user as user 'nobody'
@@ -48,6 +49,7 @@ COPY samba.sh /usr/bin/
 
 # Default container settings
 VOLUME ["/etc/samba"]
-EXPOSE 137 139 445
+EXPOSE 137/udp 138/udp 139 445
+
 ENTRYPOINT ["/init","/usr/bin/samba.sh"]
 
